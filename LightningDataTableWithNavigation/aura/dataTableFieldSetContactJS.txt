@@ -1,0 +1,46 @@
+({
+    doInit : function(c, e, h) {
+        h.doInit_Helper(c, e, h);
+        //h.getDataHelper(c, e, h);
+        //h.onLoadCount_helper(c, e, h);
+        var strrrr = '<b>lksjdflajskdfjkalsdjf</b>';
+        c.set("v.htmlEscapeset", strrrr);
+    },
+    newContactRecord : function(c, e, h) {
+        h.newContactRecord_Helper(c, e, h);
+    },
+    pagnitionClick : function(c, e, h) {
+        h.pagnitionClick_Helper(c, e, h, false, false);
+    },
+    closePopup : function(c, e, h) {
+        h.closePopup_Helper(c, e, h, false, false);
+    },
+    prevBtnRecord : function(c, e, h) {
+        h.prevBtnRecord_Helper(c, e, h, false, false);
+    },
+    nextBtnRecord : function(c, e, h) {
+        h.nextBtnRecord_Helper(c, e, h, false, false);
+    },
+    saveContactRecord : function(c, e, h) {
+        h.saveContactRecord_Helper(c, e, h, null);
+    },
+    handleColumnSorting : function(c, e, h) {
+        var fieldName = event.getParam('fieldName');
+        var sortDirection = event.getParam('sortDirection');
+        c.set("v.sortedBy", fieldName);
+        c.set("v.sortedDirection", sortDirection);
+        helper.sortData(c, fieldName, sortDirection);
+    },
+    checkBoxData : function(c, e, h) {
+        h.checkBoxData_Helper(c, e, h);
+    },
+    handleRowAction : function(c, e, h) {
+        h.handleRowAction_Helper(c, e, h);
+    },
+    closeEditMode : function(c, e, h) {
+        h.closeEditMode_Helper(c, e, h);
+    },
+    saveNCloseRecordMode : function(c, e, h) {
+        h.saveNCloseRecordMode_Helper(c, e, h);
+    },
+})

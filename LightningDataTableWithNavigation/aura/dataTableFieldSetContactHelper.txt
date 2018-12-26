@@ -1,0 +1,456 @@
+({  
+    doInit_Helper : function(c, e, h) {
+        var url = window.location.hostname;
+        c.set("v.domainUrl" , url);
+        h.getDataHelper(c, e, h, '0');
+        h.onLoadCount_helper(c, e, h);
+    },
+    
+    getDataHelper : function(c, e, h, Ofset) {
+        try {
+            var actions = [
+                { label: 'Show details', name: 'show_details' },
+                { label: 'New', name: 'new' },
+                { label: 'Edit', name: 'edit' },
+                { label: 'Delete', name: 'delete' }
+            ];
+            var action = c.get("c.getAccRecords");
+            //Set the Object parameters and Field Set name
+            action.setParams({
+                strObjectName : 'Contact',
+                strFieldSetName : 'dataTableFieldSet',
+                OfSet : Ofset
+            });
+            action.setCallback(this, function(response){
+                var state = response.getState();
+                if(state === 'SUCCESS'){
+                    var respDataTableColumn = response.getReturnValue().lstDataTableColumns;
+                    c.set("v.mycolumns", response.getReturnValue().lstDataTableColumns);
+                    //c.set("v.mydata", response.getReturnValue().lstDataTableData);
+                    var wholeData = response.getReturnValue().lstDataTableData;
+                    
+                    
+                    
+                    var newObj = {};
+                    newObj.type = 'action';
+                    newObj.typeAttributes = { rowActions:  actions};
+                    respDataTableColumn.push(newObj);
+                    c.set("v.mycolumns", respDataTableColumn);
+                    
+                    
+                    
+                    
+                    
+                    /*for(var col=0; col < respDataTableColumn.length; col++) {
+                        
+                    }
+                    
+                    console.log('mydata-->>>'+JSON.stringify(wholeData));
+                    var domainId = window.location.hostname;
+                    for(var da=0; da < wholeData.length; da++){
+                        wholeData[da].AccountId = '<a href="'+domainId+'/'+wholeData[da].Id+'">'+wholeData[da].AccountId+'</a>';
+                    }*/
+                    
+                    
+                    
+                    //console.log('wholeData-->>'+JSON.stringify(wholeData));
+                    c.set("v.mydata", wholeData);
+                    console.log('respDataTableColumn-->>>'+JSON.stringify(respDataTableColumn));
+                    var allColumns = response.getReturnValue().lstDataTableColumns;
+                    //var conList = allColumns;
+                    var newListNEW = [];
+                    var exists = false;
+                    for(var i=0; i<allColumns.length; i++) {
+                        var newWrap = {};
+                        newWrap.label = allColumns[i].label;
+                        newWrap.type = allColumns[i].type;
+                        if(allColumns[i].type == 'date' || allColumns[i].type == 'datetime') {
+                            newWrap.value = null;
+                        } else {
+                            newWrap.value = '';
+                        }
+                        if(allColumns[i].lookupType == 'Contact') {
+                            exists = true;
+                        }
+                        newWrap.fieldName = allColumns[i].fieldName;
+                        newWrap.lookupType = allColumns[i].lookupType;
+                        newWrap.disabled = allColumns[i].disabled;
+                        newWrap.lstPickListData = allColumns[i].lstPickListData;
+                        newListNEW.push(newWrap);
+                    }
+
+
+                    if(newListNEW != null && newListNEW != undefined) {
+                        if(newListNEW.includes("LastName")) {
+                            
+                        } else {
+                            var newWrap1 = {};
+                            newWrap1.label = 'Last Name';
+                            newWrap1.value = '';
+                            newWrap1.fieldName = 'LastName';
+                            newWrap1.type = 'string';
+                            newWrap.disabled = false;
+                            newListNEW.push(newWrap1);
+                        }
+                    }
+                    c.set("v.myContacts", newListNEW);
+                    if(exists == true) {
+                        c.set("v.disabledTOrF", false);
+                    }
+                    //console.log('newListNEW-->>'+JSON.stringify(newListNEW));
+                }else if (state === 'ERROR'){
+                    var errors = response.getError();
+                    if (errors) {
+                        if (errors[0] && errors[0].message) {
+                            console.log("Error message: " +
+                                        errors[0].message);
+                        }
+                    } else {
+                        console.log("Unknown error");
+                    }
+                }else{
+                    console.log('Something went wrong, Please check with your admin');
+                }
+            });
+            $A.enqueueAction(action);
+        } catch(ex){
+            console.log(ex);
+        }
+    },
+    
+    
+    onLoadCount_helper : function(c, e, h) {
+        try {
+            var action = c.get('c.countAccList');
+            action.setCallback(this, function(response) {
+                var state = response.getState();
+                if(state === "SUCCESS") {
+                    var respon = response.getReturnValue();
+                    if (respon != null){
+                        console.log('--response.getReturnValue()--->>>'+JSON.stringify(response.getReturnValue()));
+                        var newCount = parseInt(response.getReturnValue() / 10);
+                        //newCount = newCount;
+                        console.log('newCount-->>'+newCount);
+                        var btnList = [];
+                        for(var j=0; j<newCount; j++) {
+                            var btnWrap = {};
+                            btnWrap.label = j + 1;
+                            if(j==0) {
+                                btnWrap.varient = 'brand';
+                            } else {
+                                btnWrap.varient = 'neutral';
+                            }
+                            btnList.push(btnWrap);
+                        }
+                        c.set("v.endPoint", newCount);
+                        c.set("v.totalList", btnList);
+                    } else {
+                        console.log('Get Null Value From the Class :');
+                    }
+                } else if(state === "INCOMPLETE") {
+                    console.log('RESPONSE INCOMPLETE On getProperty_Helper');
+                } else if(state === "ERROR") {
+                    console.log('RESPONSE ERROR  On getProperty_Helper');
+                }
+            });
+            $A.enqueueAction(action);
+        } catch(ex){
+            console.log(ex);
+        }
+    },
+    pagnitionClick_Helper : function (c, e, h, prevBtn, nextBtn) {
+        
+        if(nextBtn == true) { // On Next or Previous Button Click it will works.
+            var label = parseInt(c.get("v.startPoint"));
+            label = label + 1;
+            c.set("v.startPoint", label);
+        } else if(prevBtn == true) {
+            var label = parseInt(c.get("v.startPoint"));
+            label = label - 1;
+            c.set("v.startPoint", label);
+        } else { // On Pagination Number It will works
+            var label = e.getSource().get("v.label");
+            console.log('label-->>'+label);
+            c.set("v.startPoint", label);
+        }
+        var endPoint = c.get("v.endPoint");
+        if(label === 1) {
+            c.find('prevBtn').set("v.disabled", true);
+        } else {
+            c.find('prevBtn').set("v.disabled", false);
+        }
+        if(label === endPoint) {
+            c.find('nextBtn').set("v.disabled", true);
+        } else {
+            c.find('nextBtn').set("v.disabled", false);
+        }
+        var getBtnWrapper = c.get("v.totalList");
+        for(var k=1; k < getBtnWrapper.length + 1; k++){
+            if(k == label) {
+                getBtnWrapper[k - 1].varient = 'brand';
+            } else {
+                getBtnWrapper[k - 1].varient = 'neutral';
+            }
+        }
+        c.set("v.totalList", getBtnWrapper);
+        var newLbl = (label-1)*10;
+        h.getDataHelper(c, e, h, newLbl);
+    },
+    newContactRecord_Helper : function(c, e, h){
+        var model = c.find('popup');
+        $A.util.removeClass(model, 'slds-hide');
+        $A.util.addClass(model, 'slds-show');
+        c.set("v.disabledTOrF", false);
+        /*var lookupTypeIs = c.get("v.isAvailableLookup");
+        if(lookupTypeIs == true) {
+            c.find("relatedLookup1").set("v.disabled", false);
+            c.find("relatedLookup1").set("v.value", '');
+        }*/
+    },
+    closePopup_Helper : function(c, e, h){
+        var model = c.find('popup');
+        $A.util.removeClass(model, 'slds-show');
+        $A.util.addClass(model, 'slds-hide');
+    },
+    prevBtnRecord_Helper : function(c, e, h){
+        h.pagnitionClick_Helper(c, e, h, true, false);
+    },
+    nextBtnRecord_Helper : function(c, e, h){
+        h.pagnitionClick_Helper(c, e, h, false, true);
+    },
+    saveContactRecord_Helper : function(c, e, h, pRecId){
+        var totalList = c.get("v.myContacts");
+        console.log('totalList==='+JSON.stringify(totalList));
+        var completeListForContact = [];
+        try {
+            var contactObject = [];
+            for(var key in totalList){
+                var newlistMap = totalList[key];
+                //console.log('i  ' + JSON.stringify(totalList[key]));
+                var mapObject = {};
+                var fieldName, value;
+                for(var key in newlistMap){
+                    
+                    
+                    if(key == 'fieldName'){
+                        fieldName = newlistMap[key];
+                    }
+                    if(key == 'value'){
+                        value = newlistMap[key];
+                    }
+                }
+                mapObject[fieldName] = value;
+                contactObject.push(mapObject);
+            }
+            var finalcontactObject={};
+            for(var key_01 in contactObject){
+                
+                //console.log('value ' + JSON.stringify(contactObject[key_01]));
+                var tempContact = contactObject[key_01];
+                for(var key_03 in tempContact){
+                    finalcontactObject[key_03] = tempContact[key_03];
+                }
+            }
+            
+            completeListForContact.push(finalcontactObject);
+            /*if(completeListForContact[0].Birthdate == '' || completeListForContact[0].Birthdate == ' ' || completeListForContact[0].Birthdate == undefined) {
+                completeListForContact[0].Birthdate = null;
+            }*/
+            console.log('completeListForContact-->>>'+JSON.stringify(completeListForContact));
+            if(completeListForContact[0].LastName == '') {
+                alert('dg');
+            } else {
+                var action = c.get("c.saveContact_Apex");
+                action.setParams({
+                    "conList" : JSON.stringify(completeListForContact)
+                });
+                action.setCallback(this, function(response){
+                    var state = response.getState();
+                    console.log('state-->>'+state);
+                    if(state === 'SUCCESS'){
+                        var res = response.getReturnValue();
+                        if (res == 'success'){
+                            var model = c.find('popup');
+                            $A.util.removeClass(model, 'slds-show');
+                            $A.util.addClass(model, 'slds-hide');
+                            h.doInit_Helper(c, e, h);
+                        } else {
+                            console.log('Something wrong with saving data.');
+                            //var model = c.find('popup');
+                            //$A.util.removeClass(model, 'slds-show');
+                            //$A.util.addClass(model, 'slds-hide');
+                        }
+                    }else if (state === 'ERROR'){
+                        var errors = response.getError();
+                        if (errors) {
+                            if (errors[0] && errors[0].message) {
+                                console.log("Error message: " +
+                                            errors[0].message);
+                            }
+                        } else {
+                            console.log("Unknown error");
+                        }
+                    }else{
+                        console.log('Something went wrong, Please check with your admin');
+                    }
+                });
+                $A.enqueueAction(action);
+            }
+        } catch(ex){
+            console.log(ex);
+        }
+    },
+    sortData: function (component, fieldName, sortDirection) {
+        var data = component.get("v.data");
+        var reverse = sortDirection !== 'asc';
+        data.sort(this.sortBy(fieldName, reverse))
+        component.set("v.data", data);
+    },
+    
+    sortBy: function (field, reverse, primer) {
+        var key = primer ?
+            function(x) {return primer(x[field])} :
+        function(x) {return x[field]};
+        reverse = !reverse ? 1 : -1;
+        return function (a, b) {
+            return a = key(a), b = key(b), reverse * ((a > b) - (b > a));
+        }
+    },
+    checkBoxData_Helper: function (c, e, h) {
+        var labelThrId = e.target.id;
+        var valThrId = e.target.checked;
+        var allContacts = c.get("v.myContacts");
+        for(var i=0; i < allContacts.length; i++) {
+            if(allContacts[i].label == labelThrId) {
+                if(valThrId == true) {
+                    allContacts[i].value = true;
+                } else {
+                    allContacts[i].value = false;
+                }
+            }
+        }
+    },
+    handleRowAction_Helper: function (c, e, h) {
+        var url = c.get("v.domainUrl");
+        var action = e.getParam('action');
+        var row = e.getParam('row');
+        switch (action.name) {
+            case 'show_details':
+                //alert('Showing Details: ' + JSON.stringify(row));
+                var baseURL = location.hostname;
+                if(baseURL.indexOf(".lightning.force.com") > 0){
+                    window.open('https://'+url+'/lightning/_classic/'+row.Id);
+                } else {
+                    window.open('https://'+url+'/'+row.Id);
+                }
+                break;
+            case 'new':
+                h.newRecord_Helper(c, e, h, row);
+                break;
+            case 'edit':
+                h.editRecord_Helper(c, e, h, row);
+                break;
+            case 'delete':
+                h.deleteRecord_Helper(c, e, h, row);
+                break;
+        }
+    },
+    deleteRecord_Helper: function (c, e, h, row) {
+        try {
+            if(row.Id != null && row.Id != null && row.Id != ' ' && row.Id != '') {
+                var action = c.get("c.deleteRecord_Apex");
+                action.setParams({
+                    recordId : row.Id
+                });
+                action.setCallback(this, function(response){
+                    var state = response.getState();
+                    if(state === 'SUCCESS'){
+                        h.doInit_Helper(c, e, h);
+                        //alert('DONE');
+                    }else if (state === 'ERROR'){
+                        var errors = response.getError();
+                        if (errors) {
+                            if (errors[0] && errors[0].message) {
+                                console.log("Error message: " +
+                                            errors[0].message);
+                            }
+                        } else {
+                            console.log("Unknown error");
+                        }
+                    }else{
+                        console.log('Something went wrong, Please check with your deleteRecord_Helper');
+                    }
+                });
+                $A.enqueueAction(action);
+            }
+        } catch(ex){
+            console.log(ex);
+        }
+    },
+    newRecord_Helper: function (c, e, h, row) {
+        try {
+            if(row.Id != null && row.Id != undefined && row.Id != ' ' && row.Id != '') {
+                var model = c.find('popup');
+                $A.util.addClass(model, 'slds-show');
+                $A.util.removeClass(model, 'slds-hide');
+                c.set("v.relatedLookupId", row.Id);
+                c.set("v.disabledTOrF", true);
+                /*var allList  = c.get("v.mycolumns");
+                console.log('allList-->>'+JSON.stringify(allList));
+                for(var i=0; i< allList.length; i++) {
+                    if(allList[i].fieldName == 'ReportsToId') {
+                        allList[i].disabled = true;
+                    }
+
+                }
+                console.log('allList-->>>>'+JSON.stringify(allList));
+                c.set("v.mycolumns", allList);*/
+                //var lookupTypeIs = c.get("v.isAvailableLookup");
+                //if(lookupTypeIs == true) {
+                    //c.find("relatedLookup1").set("v.disabled", true);
+                    //c.find("relatedLookup1").set("v.disabled", true);
+                    //c.find("relatedLookup1").set("v.value", row.Id);
+                //}
+
+
+
+            }
+        } catch(ex){
+            console.log(ex);
+        }
+    },
+    editRecord_Helper: function (c, e, h, row) {
+        try {
+            if(row.Id != null && row.Id != null && row.Id != ' ' && row.Id != '') {
+                
+                c.set("v.setSpinnerTrueFalse", true);
+                c.set("v.editMode", true);
+           		c.set("v.editRecordName", row.Id);
+                c.set("v.editRecordId", row.Id);
+                window.setTimeout(function () {
+                    c.set("v.setSpinnerTrueFalse", false);
+                },2000);
+                
+            }
+        } catch(ex){
+            console.log(ex);
+        }
+    },
+    closeEditMode_Helper: function (c, e, h) {
+        try {
+            c.set("v.editMode", false);
+            c.set("v.editRecordName", '');
+            c.set("v.editRecordId", '');
+            c.set("v.relatedLookupId", '');
+        } catch(ex){
+            console.log(ex);
+        }
+    },
+    saveNCloseRecordMode_Helper: function (c, e, h) {
+        c.find("edit").get("e.recordSave").fire();
+        c.set("v.editMode", false);
+        c.set("v.editRecordName", '');
+        c.set("v.editRecordId", '');
+        h.doInit_Helper(c, e, h);
+    },
+})

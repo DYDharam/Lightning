@@ -1,0 +1,218 @@
+<aura:component description="dataTableFieldSetContact" controller="dataTableFieldSet"
+                implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasSObjectName,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+                access="global">
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+
+    <aura:attribute name="mydata" type="Object"/>
+    <aura:attribute name="htmlEscapeset" type="String"/>
+    <aura:attribute name="mycolumns" type="List"/>
+    <aura:attribute name="myContacts" type="List[]"/>
+    <aura:attribute name="totalList" type="List"/>
+    <aura:attribute name="startPoint" type="String" default="1"/>
+    <aura:attribute name="endPoint" type="String"/>
+    <aura:attribute name="sortedBy" type="String"/>
+    <aura:attribute name="sortedDirection" type="String"/>
+    <aura:attribute name="defaultSortDirection" type="String"/>
+    <aura:attribute name="isAvailableLookup" type="Boolean" default="false"/>
+    <aura:attribute name="relatedLookupId" type="String"/>
+    <aura:attribute name="disabledTOrF" type="String" default="false"/>
+
+    <aura:attribute name="domainUrl" type="String"/>
+    <aura:attribute name="editMode" type="Boolean" default="false"/>
+
+    <aura:attribute name="editRecordName" type="String"/>
+    <aura:attribute name="editRecordId" type="String"/>
+    <aura:attribute name="setSpinnerTrueFalse" type="Boolean" default="false"/>
+
+
+    <aura:if isTrue="{!v.setSpinnerTrueFalse}">
+        <div aura:id="setSpinnerTrueFalse" id="setSpinnerTrueFalse" class="demo-only demo--inverse"
+             style="height: 6rem;">
+            <div class="slds-spinner_container slds-is-fixed">
+                <div role="status" class="slds-spinner slds-spinner_medium">
+                    <span class="slds-assistive-text">Loading</span>
+                    <div class="slds-spinner__dot-a"></div>
+                    <div class="slds-spinner__dot-b"></div>
+                </div>
+            </div>
+        </div>
+    </aura:if>
+
+    <!-- For Edit Recor Start Here -->
+    <aura:if isTrue="{!v.editMode}">
+        <div class="Container">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                     aria-describedby="modal-content-id-1"
+                     class="slds-modal slds-modal_medium slds-fade-in-open">
+                <div class="slds-modal__container" style="margin-top: 2%;width:80%;">
+                    <header class="slds-modal__header">
+                        Edit {!v.editRecordName}
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1"
+                         style="max-height: 350px;">
+                        <force:recordEdit aura:id="edit" recordId="{!v.editRecordId}"/>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning:button label="Cancel" onclick="{!c.closeEditMode}"/>
+                        <lightning:button label="Save" onclick="{!c.saveNCloseRecordMode}"
+                                          class="slds-button_brand"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </div>
+    </aura:if>
+    <!-- For Edit Recor End Here -->
+
+
+    <div class="slds-p-right_xx-small slds-p-top_x-small">
+        <lightning:button iconName="utility:add" class="slds-theme_neutral slds-float_right" variant="neutral"
+                          label="New Contact"
+                          onclick="{!c.newContactRecord}"></lightning:button>
+    </div>
+
+
+    <div style="width:100%; float:left;" class="slds-p-top_x-small">
+        <lightning:datatable data="{! v.mydata }"
+                             columns="{! v.mycolumns }"
+                             onsort="{!c.handleColumnSorting}"
+                             sortedBy="{!v.sortedBy}"
+                             sortedDirection="{!v.sortedDirection}"
+                             hideCheckboxColumn="true"
+                             onrowaction="{!c.handleRowAction}"
+                             defaultSortDirection="{!v.defaultSortDirection }"
+                             keyField="Id"/>
+
+    </div>
+
+    <!-- Popup Start -->
+    <div aura:id="popup" class="demo-only slds-hide" style="height: 640px;">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                 aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                            title="Close" onclick="{!c.closePopup}">
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Create Contact</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <div class="slds-p-horizontal--small">
+                        <aura:iteration items="{!v.myContacts}" var="col">
+                            <aura:if isTrue="{!col.type == 'string'}">
+                                <lightning:input class="" label="{!col.label}" value="{!col.value}"/>
+                            </aura:if>
+                            <aura:if isTrue="{!col.type == 'phone'}">
+                                <lightning:input class="slds-p-top_x-small" label="{!col.label}" value="{!col.value}"/>
+                            </aura:if>
+                            <aura:if isTrue="{!col.type == 'date'}">
+                                <div style="width:100%;" id="DateType">
+                                    <lightning:input class="slds-p-top_x-small" type="date"
+                                                     label="{!col.label}" value="{!col.value}"/>
+                                </div>
+                            </aura:if>
+                            <aura:if isTrue="{!col.type == 'datetime'}">
+                                <div style="width:100%;" id="DateType">
+                                    <lightning:input class="slds-p-top_x-small" type="date"
+                                                     label="{!col.label}" value="{!col.value}"/>
+                                </div>
+                            </aura:if>
+                            <aura:if isTrue="{!col.type == 'email'}">
+                                <lightning:input class="slds-p-top_x-small" type="email" name="email"
+                                                 value="{!col.value}" label="{!col.label}"/>
+                            </aura:if>
+                            <aura:if isTrue="{!col.type == 'integer'}">
+                                <lightning:input class="slds-p-top_x-small" type="number" value="{!col.value}"
+                                                 label="{!col.label}"/>
+                            </aura:if>
+                            <aura:if isTrue="{!col.type == 'boolean'}">
+                                <div class="slds-p-top_x-small">
+                                    <input type="checkbox" checked="" id="{!col.label}" onchange="{!c.checkBoxData}"/>
+                                    <label class="slds-checkbox__label slds-p-left_x-small" for="{!col.label}">
+                                        <span class="slds-form-element__label">{!col.label}</span>
+                                    </label>
+                                </div>
+
+                                <!--<lightning:input class="slds-p-top_x-small" type="checkbox" 
+                                                 label="{!col.label}"/> -->
+                            </aura:if>
+                            <aura:if isTrue="{!col.type == 'picklist'}">
+                                <lightning:combobox class="slds-p-top_x-small" value="{!col.value}" label="{!col.label}"
+                                                    placeholder="Select Type" options="{!col.lstPickListData}"/>
+                            </aura:if>
+                            <aura:if isTrue="{!col.type == 'textarea'}">
+                                <lightning:textarea class="slds-p-top_x-small" value="{!col.value}"
+                                                    label="{!col.label}"/>
+                            </aura:if>
+                            <aura:if isTrue="{!col.type == 'reference'}">
+                                <aura:if isTrue="{!col.lookupType == 'Contact'}">
+
+                                        <c:strike_lookup
+                                                aura:id="relatedLookup1"
+                                                label="{!col.label}"
+                                                disabled="{!v.disabledTOrF}"
+                                                object="{!col.lookupType}"
+                                                searchField="Name"
+                                                value="{!col.value}"
+                                                placeholder="{!col.lookupType}"
+                                                iconName="standard:account"
+                                                order="Name"
+                                                limit="5"
+                                                loadingMessage="Loading..."
+                                                errorMessage="Invalid input"/>
+
+                                    <aura:set attribute="else">
+                                        <c:strike_lookup
+                                                label="{!col.label}"
+                                                object="{!col.lookupType}"
+                                                searchField="Name"
+                                                value="{!col.value}"
+                                                placeholder="{!col.lookupType}"
+                                                iconName="standard:account"
+                                                order="Name"
+                                                limit="5"
+                                                loadingMessage="Loading..."
+                                                errorMessage="Invalid input"/>
+                                    </aura:set>
+                                </aura:if>
+                            </aura:if>
+
+
+                        </aura:iteration>
+                    </div>
+                </div>
+                <footer class="slds-modal__footer">
+                    <button class="slds-button slds-button_neutral" onclick="{!c.closePopup}">Cancel</button>
+                    <button class="slds-button slds-button_brand" onclick="{!c.saveContactRecord}">Save</button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </div>
+    <!-- End Popup -->
+
+
+    <div class="slds-grid slds-grid--pull-padded slds-p-top_small slds-text-align_center slds-float_right">
+        <div class="slds-p-right_xx-small">
+            <lightning:button iconName="utility:chevronleft" aura:id="prevBtn" class="slds-theme_neutral "
+                              disabled="true" variant="neutral"
+                              label="Prev" onclick="{!c.prevBtnRecord}"></lightning:button>
+        </div>
+        <aura:iteration items="{!v.totalList}" var="count" indexVar="countIndex">
+            <lightning:button class="slds-theme_neutral cusBtn_slds-button" variant="{!count.varient}"
+                              label="{!count.label}" onclick="{!c.pagnitionClick}"/>
+        </aura:iteration>
+
+        <div class="slds-p-left_xx-small slds-p-right_large">
+            <lightning:button iconName="utility:chevronright" iconPosition="right" aura:id="nextBtn"
+                              class="slds-theme_neutral " variant="neutral" label="Next"
+                              onclick="{!c.nextBtnRecord}"></lightning:button>
+        </div>
+
+    </div>
+
+
+</aura:component>

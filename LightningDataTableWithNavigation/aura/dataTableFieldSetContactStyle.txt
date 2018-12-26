@@ -1,0 +1,45 @@
+.THIS {
+}
+.THIS .thWidth {
+    width: 20%;
+    text-align: center;
+}
+.THIS .bgcolor {
+    background-color: #FAFAF9;
+    color: #000000;
+}
+.THIS .changeCursorIcon {
+    cursor : pointer;
+}
+.THIS .setBgColor {
+    background-color: #ffffff;
+    color : #000000;
+}
+.THIS .widFloat {
+    width: 100%;
+    float:left;
+}
+.THIS .cusBtn_slds-button {
+    border-radius:50%;
+    padding-left: 0.7rem;
+	padding-right: 0.7rem;
+}
+.THIS .bgCol{
+    background-color: #F3F2F2;
+    line-height: 32px;
+    padding-left:10px;
+    
+}
+.THIS .bor {
+    border-right: 1px solid #000000;
+}
+.THIS #example .slds-cell-fixed {
+    width: 100%;
+    background-color: #F3F2F2;
+}
+.THIS #example a:hover {
+    background-color: #FFFFFF;
+}
+.THIS #DateType .slds-dropdown-trigger_click {
+    width: 100%;
+}

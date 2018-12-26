@@ -1,0 +1,11 @@
+public class SliderController {
+    @AuraEnabled
+    Public static List<Account> getAccountList(){
+        List<Account> accountList=[Select Id, Name, Billingcity, Type, BillingState from Account order by createddate LIMIT 10];
+        if(accountList.size() > 0)
+        {
+            return accountList;
+        }
+        return accountList;
+    }
+}

@@ -1,0 +1,227 @@
+public class dataTableFieldSet {
+
+
+    /*
+	 * save the contact
+	 */
+    @AuraEnabled
+    public static String deleteRecord_Apex(String recordId) {
+        try {
+            if(recordId != null || recordId != '' || recordId != ' ' || String.isNotBlank(recordId)) {
+                List<Contact> conList = new List<Contact>();
+                conList = [select Id From Contact WHERE Id =: recordId LIMIT 1];
+                if (conList.size() > 0) {
+                    delete conList;
+                    return 'success';
+                }
+            }
+        } catch (Exception ex) {
+            System.debug('Error Message ' + ex.getMessage());
+        }
+        return null;
+    }
+    
+    
+    /*
+	 * save the contact
+	 */
+    @AuraEnabled
+    public static String saveContact_Apex(String conList) {
+        try {
+            List<Contact> newContactList = (List<Contact>)System.JSON.deserialize(conList, List<Contact>.class);
+            if (newContactList.size() > 0) {
+                insert newContactList;
+                return 'success';
+            }
+        } catch (Exception ex) {
+            System.debug('Error Message ' + ex.getMessage());
+        }
+        return null;
+    }
+    /*
+	 * get total Contacts for the pagination.
+	 */
+    @AuraEnabled
+    public static Integer countAccList() {
+        //List <Account> accList = new List <Account> ();
+        integer count = [SELECT COUNT() FROM Contact];
+        return count;
+    }
+    
+    @AuraEnabled
+    public static List<wrapSelectFromPickList> getPickListValues (String fieldsName){
+        //List<SelectOption> options = new List<SelectOption>(); 
+        List<wrapSelectFromPickList> wrapList = new List<wrapSelectFromPickList>();
+        Schema.DescribeFieldResult fieldResult =
+            Contact.CleanStatus.getDescribe();
+        List<Schema.PicklistEntry> ple = fieldResult.getPicklistValues();
+        wrapSelectFromPickList wsfpl1 = new wrapSelectFromPickList();
+        wsfpl1.label = '-- Select --';
+        wsfpl1.value = '';
+        wrapList.add(wsfpl1);
+        for( Schema.PicklistEntry f : ple)
+        {
+            wrapSelectFromPickList wsfpl = new wrapSelectFromPickList();
+            wsfpl.label = f.getLabel();
+            wsfpl.value = f.getValue();
+            wrapList.add(wsfpl);
+            //options.add(new SelectOption(f.getLabel(), f.getValue()));
+        }       
+        system.debug('wrapList-->>'+wrapList);
+        return wrapList;
+    }
+    
+    // Wrapper for the use show the picklist of the SOI (OPTIONAL) for the other coverage.
+	public Class wrapSelectFromPickList {
+    	@AuraEnabled
+    	public String label {set; get;}
+    	@AuraEnabled
+    	public String value {set; get;}
+    }
+    public Class wrapSelectFromPickListComplete {
+    	@AuraEnabled
+    	public String label {set; get;}
+    	@AuraEnabled
+    	public String value {set; get;}
+    }
+    
+    /*
+	 * Method Name	: getAccRecords
+	 * Purpose		: To get the wrapper of Columns and Headers
+	 */
+    @AuraEnabled
+    public static DataTableResponse getAccRecords(String strObjectName,
+                                                  String strFieldSetName,
+                                                  Integer OfSet) {
+
+        //Get the fields from FieldSet
+        Schema.SObjectType SObjectTypeObj = Schema.getGlobalDescribe().get(strObjectName);
+        Schema.DescribeSObjectResult DescribeSObjectResultObj = SObjectTypeObj.getDescribe();
+        Schema.FieldSet fieldSetObj = DescribeSObjectResultObj.FieldSets.getMap().get(strFieldSetName);
+
+        //To hold the table hearders 
+        List<DataTableColumns> lstDataColumns = new List<DataTableColumns>();
+
+        //Field to be queried - fetched from fieldset
+        List<String> lstFieldsToQuery = new List<String>();
+
+        //The final wrapper response to return to component
+        DataTableResponse response = new DataTableResponse();
+
+        for (Schema.FieldSetMember eachFieldSetMember : fieldSetObj.getFields()) {
+            String dataType = String.valueOf(eachFieldSetMember.getType()).toLowerCase();
+            //This way we can set the type of a column
+            //We do not get the exact type from schema object which matches to lightning:datatable component structure
+            if (dataType == 'datetime') {
+                dataType = 'date';
+            }
+            DataTableColumns datacolumns;
+            if(dataType == 'picklist') {
+                List<wrapSelectFromPickList> getList = dataTableFieldSet.getPickListValues('CleanStatus');
+                system.debug('picklilsittst---->>');
+                datacolumns = new DataTableColumns(String.valueOf(eachFieldSetMember.getLabel()),
+                    String.valueOf(eachFieldSetMember.getFieldPath()),
+                    String.valueOf(eachFieldSetMember.getType()).toLowerCase(),
+                    '',
+                    getList
+                    );
+                system.debug('datacolumns-->>>'+datacolumns);
+            } else {
+            
+                if(dataType == 'reference') {
+                    String filednamehere = String.valueOf(eachFieldSetMember.getFieldPath());
+                    Schema.SObjectType t = Schema.getGlobalDescribe().get('Contact');
+                    Schema.DescribeSObjectResult r = t.getDescribe();
+                    String getLookup = '';
+                    Schema.DescribeFieldResult f = r.fields.getMap().get(filednamehere).getDescribe();
+                    for(Schema.SObjectType reference : f.getReferenceTo()) {
+                        getLookup = reference.getDescribe().getName();
+                    }
+                    datacolumns = new DataTableColumns(String.valueOf(eachFieldSetMember.getLabel()),
+                        String.valueOf(eachFieldSetMember.getFieldPath()),
+                        String.valueOf(eachFieldSetMember.getType()).toLowerCase(),
+                        getLookup,
+                        null
+                        );
+                } else {
+                //Create a wrapper instance and store label, fieldname and type.
+                datacolumns = new DataTableColumns(String.valueOf(eachFieldSetMember.getLabel()),
+                        String.valueOf(eachFieldSetMember.getFieldPath()),
+                        String.valueOf(eachFieldSetMember.getType()).toLowerCase(),
+                        '',
+                        null
+                        );
+                }
+            }
+            lstDataColumns.add(datacolumns);
+            //system.debug('lstDataColumns-->>>>'+lstDataColumns);
+            lstFieldsToQuery.add(String.valueOf(eachFieldSetMember.getFieldPath()));
+        }
+
+        //Form an SOQL to fetch the data - Set the wrapper instance and return as response
+        if (!lstDataColumns.isEmpty()) {
+            response.lstDataTableColumns = lstDataColumns;
+            String query = 'SELECT Id, ' + String.join(lstFieldsToQuery, ',') + ' FROM Contact LIMIT 10 OFFSET ' +
+                    Integer.valueOf(OfSet);
+            System.debug(query);
+            response.lstDataTableData = Database.query(query);
+        }
+
+        return response;
+    }
+
+    //Wrapper class to hold Columns with headers
+    public class DataTableColumns {
+        @AuraEnabled
+        public String label {
+            get;set;
+        }
+        @AuraEnabled
+        public String fieldName {
+            get;set;
+        }
+        @AuraEnabled
+        public String type {
+            get;set;
+        }
+        @AuraEnabled
+        public String lookupType {
+            get;set;
+        }
+        @AuraEnabled
+        public List<wrapSelectFromPickList> lstPickListData {
+            get;set;
+        }
+        public DataTableColumns() {
+            lstPickListData = new List<wrapSelectFromPickList>();
+        }
+
+        //Create and set three variables label, fieldname and type as required by the lightning:datatable
+        public DataTableColumns(String label, String fieldName, String type, String lookupType, List<wrapSelectFromPickList> getPickList) {
+            system.debug('getPickList-->>>>>>>'+getPickList);
+            this.label = label;
+            this.fieldName = fieldName;
+            this.type = type;
+            this.lookupType = lookupType;
+            this.lstPickListData = getPickList;
+        }
+    }
+    
+    
+    //Wrapper calss to hold response - This response is used in the lightning:datatable component
+    public class DataTableResponse {
+        @AuraEnabled
+        public List<DataTableColumns> lstDataTableColumns {
+            get;set;
+        }
+        @AuraEnabled
+        public List<sObject> lstDataTableData {
+            get;set;
+        }
+
+        public DataTableResponse() {
+            lstDataTableColumns = new List<DataTableColumns>();
+            lstDataTableData = new List<sObject>();
+        }
+    }
+}
